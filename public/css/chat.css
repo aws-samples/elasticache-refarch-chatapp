@@ -1,0 +1,80 @@
+/*
+Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+Licensed under the Amazon Software License (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
+
+    http://aws.amazon.com/asl/
+
+or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and limitations under the License.
+*/
+
+.navbar {
+    background-color: #f8981d;
+}
+
+.members {
+    position: fixed;
+    top: 54px;
+    bottom: 0;
+    left: 0;
+    /*z-index: 1000;*/
+    z-index: -1;
+    /*padding: 20px;*/
+    /*overflow-x: hidden;*/
+    overflow: auto;
+    /* Scrollable contents if viewport is shorter than content. */
+    border-right: 1px solid #eee;
+}
+
+.members-header {
+    background-color: #F5EDCD;
+    color: #545456;
+    font-size: 1.25rem;
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+}
+
+.meessage-avatar {
+    float: left;
+    margin: 0px 15px 15px 0px;
+}
+
+.members-group {
+    width: 100%;
+}
+
+.messages-header {
+    background-color: #EAF0E8;
+    color: #545456;
+    font-size: 1.25rem;
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+}
+
+.messages-main {
+    height: 90vh;
+}
+
+.messages-body {
+    padding-top: 1rem;
+    overflow: auto;
+    height: 75vh;
+}
+
+.messages-footer {
+    padding-top: 1rem;
+    padding-left: .25rem;
+    padding-right: .25rem;
+}
+
+.list-group-item {
+    border: none;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+
+}
+.list-group-item:first-child {
+    border-top: none;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!--
+Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+Licensed under the Amazon Software License (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
+
+    http://aws.amazon.com/asl/
+
+or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and limitations under the License.
+-->
+<html lang="en">
+
+<head>
+    <title>Amazon ElastiCache Chat</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="css/bootstrap.4.0.0-alpha.6.min.css">
+    <link rel="stylesheet" href="css/chat.css">
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-inverse">
+            <a class="navbar-brand" href="#">Amazon ElastiCache Chat</a>
+        </nav>
+        <div class="container-fluid">
+            <div class="row">
+                <nav class="col-sm-2 bg-faded members">
+                    <div class="row members-header">
+                        <div class="col-sm-12">
+                            Members
+                        </div>
+                    </div>
+                    <div class="row members-body" v-cloak>
+                        <ul class="list-group members-group">
+                            <li class="list-group-item member-item justify-content-between bg-faded" v-for="(value, key) in members">
+                                <img v-bind:src="value.avatar" class="rounded-circle mr-1">
+                                <small> {{ value.username }}</small>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+                <main class="col-sm-10 offset-sm-2 messages-main">
+                    <div class="row messages-header">
+                        <div class="col-sm-12">
+                            Messages
+                        </div>
+                    </div>
+                    <div class="row messages-body" v-cloak>
+                        <div class="col-sm-12">
+                            <ul class="list-group message-group">
+                                <li class="list-group-item message-item d-flex" v-for="message in messages" track-by="$index">
+                                    <img v-bind:src="message.avatar" class="rounded-circle float-left mr-2"> {{ message.message }}
+                                    <hr>
+                                    <small class="text-muted">{{ message.username }} @ {{ formatMessageDate(message.date) }}</small>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row messages-footer">
+                        <div class="input-group">
+                            <input type="text" class="form-control" v-focus="true" v-model="message" v-on:keyup.enter="send" placeholder="Message text...">
+                            <span class="input-group-btn">
+                                    <button class="btn btn-primary" type="button">Send</button>
+                                </span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/vue/2.1.10/vue.min.js"></script>
+    <script src="js/vue-focus/2.1.0/vue-focus.min.js"></script>
+    <script src="js/socket.io/1.7.2/socket.io.min.js"></script>
+    <script src="js/moment.js/2.17.1/moment.min.js"></script>
+
+    <script>
+        var socket = io();
+
+        new Vue({
+            el: '#app',
+            mixins: [VueFocus.mixin],
+            data: {
+                message: '',
+                messages: [],
+                members: {}
+            },
+            methods: {
+                send: function() {
+                    socket.emit('send', this.message);
+                    this.message = '';
+                },
+                formatMemberDate: function(date) {
+                    return moment(date).format("h:mm:ss a");
+                },
+                formatMessageDate: function(date) {
+                    return moment(date).format("h:mm:ss a");
+                }
+            },
+            mounted: function() {
+                socket.on('messages', function(message) {
+                    this.messages.push(message);
+                }.bind(this));
+
+                socket.on('member_add', function(member) {
+                    Vue.set(this.members, member.socket, member);
+                }.bind(this));
+
+                socket.on('member_delete', function(socket_id) {
+                    Vue.delete(this.members, socket_id);
+                }.bind(this));
+
+                socket.on('message_history', function(messages) {
+                    this.messages = messages;
+                }.bind(this));
+
+                socket.on('member_history', function(members) {
+                    this.members = members;
+                }.bind(this));
+            }
+        });
+    </script>
+</body>
+
+</html>

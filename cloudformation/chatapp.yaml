@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ClusterNodeType:
+    Description: The compute and memory capacity of the nodes in the Redis Cluster
+    Type: String
+    Default: cache.t2.small
+    AllowedValues:
+    - cache.t2.small
+    - cache.m1.small
+    - cache.m1.large
+  ApplicationInstanceType:
+    Description: The compute and memory capacity of the application's EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+    - t2.micro
+  ApplicationAutoScalingMinSize:
+    Description: The minimum number of instances in the application auto scaling group
+    Type: Number
+    Default: 2
+    MinValue: 2
+  ApplicationAutoScalingMaxSize:
+    Description: The maximum number of instances in the application auto scaling group
+    Type: Number
+    Default: 2
+    MinValue: 2
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+Outputs:
+  ApplicationUrl:
+    Description: The URL to the load balancer for the application
+    Value: !GetAtt ChatEnvironment.EndpointURL
+Resources:
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheNodeType: !Ref ClusterNodeType
+      VpcSecurityGroupIds:
+      - !GetAtt CacheSecurityGroup.GroupId
+      Engine: redis
+      NumCacheNodes: 1
+  CacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cache security group
+  CacheSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt CacheSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: !GetAtt RedisCluster.RedisEndpoint.Port
+      ToPort: !GetAtt RedisCluster.RedisEndpoint.Port
+      SourceSecurityGroupId: !GetAtt ApplicationSecurityGroup.GroupId
+  ChatApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      Description: AWS Elastic Beanstalk Chat Application
+  ChatApplicationVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref ChatApplication
+      Description: AWS ElasticBeanstalk Chat Application Version
+      SourceBundle:
+        S3Bucket: elasticache-refarch-chatapp
+        S3Key: chatapp.zip
+  ChatConfigurationTemplate:
+    Type: AWS::ElasticBeanstalk::ConfigurationTemplate
+    Properties:
+      ApplicationName: !Ref ChatApplication
+      Description: AWS ElasticBeanstalk Chat Configuration Template
+      SolutionStackName: 64bit Amazon Linux 2016.09 v3.3.1 running Node.js
+      OptionSettings:
+      - Namespace: aws:autoscaling:asg
+        OptionName: MinSize
+        Value: !Ref ApplicationAutoScalingMinSize
+      - Namespace: aws:autoscaling:asg
+        OptionName: MaxSize
+        Value: !Ref ApplicationAutoScalingMaxSize
+      - Namespace: aws:elasticbeanstalk:environment
+        OptionName: EnvironmentType
+        Value: LoadBalanced
+      - Namespace: aws:elasticbeanstalk:environment
+        OptionName: ServiceRole
+        Value: aws-elasticbeanstalk-service-role
+      - Namespace: aws:elasticbeanstalk:environment
+        OptionName: LoadBalancerType
+        Value: application
+      - Namespace: aws:elasticbeanstalk:environment:process:default
+        OptionName: StickinessEnabled
+        Value: 'true'
+      - Namespace: aws:elasticbeanstalk:healthreporting:system
+        OptionName: SystemType
+        Value: enhanced
+      - Namespace: aws:autoscaling:launchconfiguration
+        OptionName: IamInstanceProfile
+        Value: aws-elasticbeanstalk-ec2-role
+      - Namespace: aws:autoscaling:launchconfiguration
+        OptionName: InstanceType
+        Value: !Ref ApplicationInstanceType
+      - Namespace: aws:autoscaling:launchconfiguration
+        OptionName: EC2KeyName
+        Value: !Ref KeyName
+      - Namespace: aws:autoscaling:launchconfiguration
+        OptionName: SecurityGroups
+        Value: !Ref ApplicationSecurityGroup
+      - Namespace: aws:elb:loadbalancer
+        OptionName: SecurityGroups
+        Value: !Ref LoadBalancerSecurityGroup
+      - Namespace: aws:elasticbeanstalk:container:nodejs
+        OptionName: NodeCommand
+        Value: npm start
+      - Namespace: aws:elasticbeanstalk:application:environment
+        OptionName: REDIS_ADDRESS
+        Value: !Sub "redis://${RedisCluster.RedisEndpoint.Address}:${RedisCluster.RedisEndpoint.Port}"
+      - Namespace: aws:elasticbeanstalk:container:nodejs
+        OptionName: ProxyServer
+        Value: nginx
+  ChatEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref ChatApplication
+      Description: AWS ElasticBeanstalk Chat Environment
+      TemplateName: !Ref ChatConfigurationTemplate
+      VersionLabel: !Ref ChatApplicationVersion
+  ApplicationSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Application security group
+  ApplicationSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt ApplicationSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Load balancer security group
+  LoadBalancerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
