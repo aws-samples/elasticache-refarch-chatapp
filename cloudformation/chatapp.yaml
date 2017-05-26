@@ -70,7 +70,7 @@ Resources:
     Properties:
       ApplicationName: !Ref ChatApplication
       Description: AWS ElasticBeanstalk Chat Configuration Template
-      SolutionStackName: 64bit Amazon Linux 2016.09 v3.3.1 running Node.js
+      SolutionStackName: 64bit Amazon Linux 2017.03 v4.1.0 running Node.js
       OptionSettings:
       - Namespace: aws:autoscaling:asg
         OptionName: MinSize
