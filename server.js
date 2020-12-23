@@ -80,8 +80,8 @@ io.on('connection', function(socket) {
         var member = values[1];
         var messages = values[2];
 
-        io.emit('member_history', members);
-        io.emit('message_history', messages);
+        socket.emit('member_history', members);
+        socket.emit('message_history', messages);
 
         redis.publish('member_add', JSON.stringify(member));
 
