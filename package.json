@@ -14,6 +14,6 @@
     "ioredis": "^2.4.3",
     "lodash": "^4.17.4",
     "moment": "^2.17.1",
-    "socket.io": "^1.7.2"
+    "socket.io": "^2.4.0"
   }
 }
